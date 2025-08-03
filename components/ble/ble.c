@@ -1,7 +1,9 @@
 #include "ble.h"
 #include "sensors.h"
 #include "esp_nimble_hci.h"
-
+#include <time.h>
+#include "esp_system.h"
+#include "esp_mac.h"
 /* Global Variable Declarations */
 static const char* LOG_TAG = "BLE";
 
@@ -13,7 +15,7 @@ char rfid_value[50] = "";
 TaskHandle_t xHandle = NULL;
 uint16_t conn_handle;
 uint16_t notification_handle;
-bool notify_state;
+bool notify_state = true;
 
 /*********
  * Define UUIDs
@@ -24,7 +26,7 @@ static const ble_uuid128_t gatt_svr_svc_uuid =
     BLE_UUID128_INIT(0x2c, 0x90, 0x9a, 0x45, 0x00, 0x63, 0x92, 0xb9, 0xff, 0x4d, 0x0c, 0x24, 0x4a, 0x84, 0x61, 0x01);
 
 //!! Characteristic UUID: 85453fa7-2516-47b1-8ab5-b309cc46ce2b
-static const ble_uuid128_t gatt_svr_chr_sensor_uuid =
+static const ble_uuid128_t gatt_svr_chr_mac_uuid =
     BLE_UUID128_INIT(0x2b, 0xce, 0x46, 0xcc, 0x09, 0xb3, 0xb5, 0x8a, 0xb1, 0x47, 0x16, 0x25, 0xa7, 0x3f, 0x45, 0x85);
 
 //!! Characteristic UUID: ee4c2466-c729-4693-a087-d6082f04774a
@@ -43,17 +45,16 @@ int gatt_svr_chr_access(uint16_t conn_handle, uint16_t attr_handle, struct ble_g
     const ble_uuid_t *uuid = ctxt->chr->uuid;
 
     //Identify characteristic by UUID
-    if (ble_uuid_cmp(uuid, &gatt_svr_chr_sensor_uuid.u) == 0)
+    if (ble_uuid_cmp(uuid, &gatt_svr_chr_mac_uuid.u) == 0) //Generic Sensor
     {
         assert(ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR); //can only read this attribute
         //respond with sensor value from components/sensors
-        int sensorVal = read_sensor();
-        snprintf(sensor_value, 50, "%d", sensorVal); 
-        rc = os_mbuf_append(ctxt->om, &sensor_value, sizeof sensor_value);
+
+        rc = os_mbuf_append(ctxt->om, &macAddr, sizeof macAddr);
         return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
         
     } 
-    else if (ble_uuid_cmp(uuid, &gatt_svr_chr_rfid_uuid.u) == 0)
+    else if (ble_uuid_cmp(uuid, &gatt_svr_chr_rfid_uuid.u) == 0) //RFID
     {
         assert(ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR); //can only read this attribute
         char *rfid = read_rfid();
@@ -76,9 +77,9 @@ const struct ble_gatt_svc_def gatt_svr_svcs[] = {
         .characteristics = (struct ble_gatt_chr_def[]){
             {
                 /* Characteristic: Sensor data */
-                .uuid = &gatt_svr_chr_sensor_uuid.u,
+                .uuid = &gatt_svr_chr_mac_uuid.u,
                 .access_cb = gatt_svr_chr_access,
-                // .val_handle = &notification_handle,
+                .val_handle = &notification_handle,
                 .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY 
             },
             {
@@ -149,6 +150,7 @@ int esp_bt_gap_event(struct ble_gap_event *event, void *arg)
                 rc = ble_gap_conn_find(event->connect.conn_handle, &desc);
                 assert(rc == 0);
                 esp_bt_print_conn_desc(&desc);
+                conn_handle = event->connect.conn_handle; //store connection handle
             }
             if (event->connect.status != 0) {
                 esp_bt_advertise(); //go back to advertising on disconnect
@@ -229,18 +231,28 @@ void ble_host_task(void *param) {
 
 void vTaskSendNotification()
 {
-    int rc;
     struct os_mbuf *om;
     while (1)
     {
         if (notify_state)
         {
             /* TODO: DUMMY CODE */
-            om = ble_hs_mbuf_from_flat(read_rfid(), strlen(read_rfid()));
-            rc = ble_gattc_notify_custom(conn_handle, notification_handle, om);
-            if (rc != 0) return;
-            notify_state = false;
+            // rc = ble_gattc_notify_custom(conn_handle, notification_handle, om);
+
+            uint8_t data[] = {read_sensor()};
+            om = ble_hs_mbuf_from_flat(data, sizeof(data));
+            ble_gatts_notify_custom(conn_handle, notification_handle, om);
+            // notify_state = false;
         }
+        
+        /* Log Current Time */
+        time_t now;
+        char strftime_buf[64];
+        struct tm timeinfo;
+        time(&now);
+        localtime_r(&now, &timeinfo);
+        strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+        ESP_LOGI("SNTP", "The current date/time in Los Angeles is: %s", strftime_buf);
         vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
     // Should never exit

@@ -6,6 +6,7 @@
 #include "esp_ota_ops.h"
 #include "esp_https_ota.h"
 #include "esp_crt_bundle.h"
+#include <esp_netif_sntp.h>
 
 /* Defines */
 #define TAG "esp_wifi"
@@ -59,6 +60,11 @@ void wifi_config()
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     wifiLogin(default_ssid, default_password);
     ESP_ERROR_CHECK(esp_wifi_start());
+
+    /* Configure SNTP */
+    esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
+    esp_netif_sntp_init(&config);
+    esp_netif_sntp_start();
 }
 
 /* Logging and retry for WiFi task*/
@@ -244,4 +250,5 @@ void ota_task(void *arg)
         vTaskDelay(delay);
     }
 }
+
 #endif //WIFI_ENABLE

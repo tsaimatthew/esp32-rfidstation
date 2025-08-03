@@ -1,0 +1,29 @@
+menu "ESP32 Sensor Settings"
+
+    config MOSI_PIN
+        int "MOSI Pin"
+        default 13
+        help
+            SPI MOSI pin
+    config MISO_PIN
+        int "MISO Pin"
+        default 12
+        help
+            SPI MISO Pin
+    config SCK_PIN
+        int "SPI SCK Pin"
+        default 14
+        help
+            SPI SCK Pin
+    config BME280_CS_PIN
+        int "BME280 CS Pin"
+        default 15
+        help
+            SPI CS pin for BME280
+    config PN532_CS_PIN
+        int "PN532 CS Pin"
+        default 16
+        help
+            SPI CS pin for PN532 RFID Reader
+   
+endmenu

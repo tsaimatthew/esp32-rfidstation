@@ -80,4 +80,9 @@ menu "ESP32 WiFi/OTA Settings"
         default "https://github.com/tsaimatthew/esp32-rfidstation/releases/latest/download/esp-bt.bin"
         help
             URL of server which hosts the firmware image.
+    config TIMEZONE
+        string "Timezone"
+        default "PST8PDT,M3.2.0,M11.1.0"
+        help
+            POSIX-style timezone string for use with SNTP
 endmenu

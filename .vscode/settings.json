@@ -48,6 +48,20 @@
     "regex": "c",
     "tuple": "c",
     "type_traits": "c",
-    "utility": "c"
-  }
+    "utility": "c",
+    "esp_sntp.h": "c",
+    "esp_netif_sntp.h": "c",
+    "mqtt_client.h": "c",
+    "random": "c",
+    "bitset": "c",
+    "string_view": "c",
+    "bme280.h": "c",
+    "spi_common.h": "c",
+    "spi_master.h": "c",
+    "cstdint": "cpp",
+    "spi_types.h": "c",
+    "compare": "c",
+    "thread": "c"
+  },
+  "idf.flashType": "UART"
 }

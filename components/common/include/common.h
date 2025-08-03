@@ -31,6 +31,13 @@ extern char deviceName[MAX_DEVICE_NAME_LENGTH + 1];
 extern char ssid[WIFI_SSID_MAX + 1];
 extern char psk[WIFI_PSK_MAX + 1];
 extern char mqttEndpt[MAX_MQTT_ENDPT_LENGTH + 1];
+extern char tz[29];
+extern char macAddr[18];
+
+extern char *client_key_pem;
+extern char *client_cert_pem;
+extern char *server_cert_pem;
+
 extern bool wifiEnable;
 extern bool rfidEnable;
 extern bool tempEnable;
