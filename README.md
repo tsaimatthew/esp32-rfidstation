@@ -12,6 +12,7 @@ The networking tasks (WiFi, BLE, and OTA) are tied to core 0. If enabled in sett
   - WiFi SSID and Password for default WiFi login. This can be configured via the app. 
   - Maximum WiFi retry 
 - ESP32 BLE Defaults: Default Bluetooth name
+- The MQTT QoS is set to 0 and will send data every 10 seconds.
 
 ## Components
 ### BLE

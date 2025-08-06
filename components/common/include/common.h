@@ -26,6 +26,7 @@ common.h: includes used across all components
 #define WIFI_PSK_MAX 64
 #define MAX_DEVICE_NAME_LENGTH 28
 #define MAX_MQTT_ENDPT_LENGTH 64
+#define MAX_CERT_SIZE 4096
 
 extern char deviceName[MAX_DEVICE_NAME_LENGTH + 1];
 extern char ssid[WIFI_SSID_MAX + 1];
@@ -34,9 +35,13 @@ extern char mqttEndpt[MAX_MQTT_ENDPT_LENGTH + 1];
 extern char tz[29];
 extern char macAddr[18];
 
-extern char *client_key_pem;
-extern char *client_cert_pem;
-extern char *server_cert_pem;
+// extern char *client_key_pem;
+// extern char *client_cert_pem;
+// extern char *server_cert_pem;
+
+extern char client_key_pem[MAX_CERT_SIZE];
+extern char client_cert_pem[MAX_CERT_SIZE];
+extern char server_cert_pem[MAX_CERT_SIZE];
 
 extern bool wifiEnable;
 extern bool rfidEnable;

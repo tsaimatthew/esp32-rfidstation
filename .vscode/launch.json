@@ -11,5 +11,20 @@
       "name": "Launch",
       "request": "launch"
     }
+  ],
+  "tasks": [
+    {
+      "label": "app-flash",
+      "type": "shell",
+      "command": "idf.py",
+      "args": [
+        "app-flash"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    }
   ]
 }

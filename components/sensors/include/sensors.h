@@ -13,7 +13,7 @@ extern "C" {
 int read_sensor();
 char *read_rfid();
 void run_mqtt();
-void send_mqtt(esp_mqtt_client_handle_t client, char topic[], char *message);
+void send_mqtt(esp_mqtt_client_handle_t client, char *topic, char *message);
 esp_err_t initSpi();
 void vTaskReadBME280();
 int bme280_compensate_T(uint32_t uncomp_T);

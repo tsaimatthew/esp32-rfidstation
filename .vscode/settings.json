@@ -61,7 +61,8 @@
     "cstdint": "cpp",
     "spi_types.h": "c",
     "compare": "c",
-    "thread": "c"
+    "thread": "c",
+    "spi.h": "c"
   },
   "idf.flashType": "UART"
 }

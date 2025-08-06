@@ -18,9 +18,6 @@ bool mqttConnected = false;
 static esp_mqtt_client_handle_t mqtt_client = NULL;
 static spi_device_handle_t bme280_handle;
 TaskHandle_t bmeHandle = NULL;
-uint16_t dig_T1_val = 0;
-int16_t dig_T2_val = 0;
-int16_t dig_T3_val = 0;
 
 /* SPI Handler Functions */
 int read_sensor() 
@@ -64,104 +61,40 @@ esp_err_t initSpi()
         .flags = SPI_DEVICE_HALFDUPLEX
     };
     ESP_ERROR_CHECK(spi_bus_add_device(SPI2_HOST, &bme280_config, &bme280_handle));
-    // uint8_t txBuf[1] = {BME_CONFIG};
-    // spi_transaction_t bme280_trans = {
-    //     .cmd = CTRL_MEAS & WRITE_MASK,
-    //     .length = 8,
-    //     .rxlength = 0,
-    //     .rx_buffer = NULL,
-    //     .tx_buffer = txBuf
-    // };
-    // ESP_ERROR_CHECK(spi_device_transmit(bme280_handle, &bme280_trans));
-
-    //Confirm device ID
-    uint8_t id[1];
-    readSpi(0xD0, id, &bme280_handle, 8);
-    printf("0x%02X \n", id[0]);
-
-    //Load t1, t2, t3 into memory
-    uint8_t buf[2] = {0};
-    readSpi(DIG_T1, buf, &bme280_handle, 16);
-    dig_T1_val = (((uint16_t)buf[1]) << 8) | ((uint16_t)buf[0]);
-    memset(buf, 0, sizeof(buf)); //reset array
-
-    readSpi(DIG_T2, buf, &bme280_handle, 16);
-    dig_T2_val = (int16_t)(((uint16_t)buf[1]) << 8) | ((uint16_t)buf[0]);
-    memset(buf, 0, sizeof(buf)); //reset array
-
-    readSpi(DIG_T3, buf, &bme280_handle, 16);
-    dig_T3_val = (int16_t)(((uint16_t)buf[1]) << 8) | ((uint16_t)buf[0]);
-    memset(buf, 0, sizeof(buf)); //reset array
+    initBME280(&bme280_handle);
     return ESP_OK;
 };
 
 void vTaskReadBME280()
 {
-    uint8_t txBuf[1] = {BME_CONFIG};
-    uint8_t tempBuf[3] = {0};
-    uint8_t status[1] = {0};
-    uint8_t tempReg[4] = {TEMP_MSB|READ_MASK, 0, 0, 0};
+    int temp32 = 0;
+    uint32_t pressure32 = 0;
+    double humidity32 = 0;
     while (1)
     {
-        printf("BMECONFIG: 0x%02X \n", txBuf[0]);
-        // uint8_t tempBuf[3] = {0};
-        // spi_transaction_t transaction = {
-        //     .cmd = TEMP_MSB & READ_MASK,
-        //     .length = 0,
-        //     .rxlength = 24,
-        //     .rx_buffer = tempBuf,
-        // };
-        // ESP_ERROR_CHECK(spi_device_transmit(bme280_handle, &transaction));
-        /* Read Temperature */
-        
-        writeSpi(CTRL_MEAS, txBuf, &bme280_handle, 8);
-        memset(tempBuf, 0, sizeof(tempBuf)); //reset array
-        memset(status, 0, sizeof(status)); //reset array
-        uint8_t ctrl_meas[1];
-        do {
-            readSpi(BME_STATUS, status, &bme280_handle, 8);
-        } while (status[0] & 0x08);
+        readBME280(&bme280_handle, &temp32, &pressure32, &humidity32);
+        if (mqtt_client)
+        {
+            char buf[12];
+            //Send temperature
+            sprintf(buf, "%d", temp32);
+            send_mqtt(mqtt_client, "/temp", buf);
+            memset(buf, 0, sizeof(buf));
 
-        printf("Status: 0x%02X \n", status[0]);
+            //Send Pressure
+            sprintf(buf, "%lu", pressure32);
+            send_mqtt(mqtt_client, "/pressure", buf);
+            memset(buf, 0, sizeof(buf));
 
-        readSpi(CTRL_MEAS, ctrl_meas, &bme280_handle, 8);
-        printf("0x%02X \n", ctrl_meas[0]);
-        vTaskDelay(pdMS_TO_TICKS(20));
-
-        duplexSpi()
-
-        readSpi(TEMP_MSB, tempBuf, &bme280_handle, 24);
-        // print reg contents
-        int32_t temp32 = 0;
-        printf("\n");
-        printf("MSB: 0x%02X  LSB: 0x%02X  XLSB: 0x%02X\n",
-            tempBuf[0], tempBuf[1], tempBuf[2]);
-        temp32 |= ((int32_t)tempBuf[0] << 12);
-        temp32 |= ((int32_t)tempBuf[1] << 4);
-        temp32 |= ((int32_t)tempBuf[2] >> 4);
-
-
-        printf("Final Temp: %ld\n", temp32);
-        printf("compensated temp: %d", bme280_compensate_T(temp32));
-        printf("\n");
-        vTaskDelay(pdMS_TO_TICKS(1000));
+            //Send Humidity
+            sprintf(buf, "%f", humidity32);
+            send_mqtt(mqtt_client, "/humidity", buf);
+        }
+        vTaskDelay(pdMS_TO_TICKS(10000)); //10s delay
     }
 }
 
-int bme280_compensate_T(uint32_t uncomp_T)
-{
-    int var1, var2, T;
-    var1 = ((((uncomp_T>>3) - ((int32_t)dig_T1_val<<1))) * ((int32_t)dig_T2_val)) >> 11;
-    var2 = (((((uncomp_T>>4) - ((int32_t)dig_T1_val)) * ((uncomp_T>>4) - ((int32_t)dig_T1_val)))>>12) *
-            ((int32_t)dig_T3_val)) >> 14;
-    // var1 = ((((uncomp_T >> 3) - ((int32_t)dig_T1_val << 1))) * ((int32_t)dig_T2_val)) >> 11;
-    // var2 = (((((uncomp_T >> 4) - ((int32_t)dig_T1_val)) *
-    //         ((uncomp_T >> 4) - ((int32_t)dig_T1_val))) >> 12) *
-    //         ((int32_t)dig_T3_val)) >> 14;
-    int t_fine = var1 + var2;
-    T = (t_fine * 5 + 128) >> 8;
-    return T;
-}
+
 
 /* MQTT Handler Functions */
 static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
@@ -173,7 +106,6 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
         mqttConnected = true;
-        send_mqtt(client, "/test",  "world");
         break;
     case MQTT_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
@@ -218,6 +150,9 @@ esp_mqtt_client_handle_t start_mqtt(void)
                 .key = (const char *)client_key_pem,
             }
         },
+        .session = {
+            .keepalive = 60
+        }
     };
 
     mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
@@ -226,14 +161,13 @@ esp_mqtt_client_handle_t start_mqtt(void)
     return mqtt_client;
 }
 
-void send_mqtt(esp_mqtt_client_handle_t client, char topic[], char *message)
+void send_mqtt(esp_mqtt_client_handle_t client, char *topic, char *message)
 {
     char mac[50] = {0};
     strcpy(mac, macAddr);
-    topic = "/test";
     strcat(mac, topic);
-    printf(mac);
-    esp_mqtt_client_publish(client, mac, message, 0, 2, 0);
+    ESP_LOGI(TAG, "Topic: %s", mac);
+    esp_mqtt_client_publish(client, mac, message, 0, 0, 0);
 }
 
 void run_mqtt()
