@@ -45,10 +45,6 @@ void initBME280(spi_device_handle_t *spiHandle);
 
 void readBME280(spi_device_handle_t *spiHandle, int *temp32, uint32_t *pressure32, double *humidity32);
 
-int readTemperature(spi_device_handle_t *spiHandle);
-uint32_t readPressure(spi_device_handle_t *spiHandle);
-uint32_t readHumidity(spi_device_handle_t *spiHandle);
-
 int bme280_compensate_T(uint32_t uncomp_T);
 uint32_t bme280_compensate_P(int uncomp_P);
 double bme280_compensate_H(int32_t adc_H);

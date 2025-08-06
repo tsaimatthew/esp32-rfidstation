@@ -149,44 +149,6 @@ void readBME280(spi_device_handle_t *spiHandle, int *temp32, uint32_t *pressure3
     *humidity32 = bme280_compensate_H((int32_t)raw_humidity);
 }
 
-int readTemperature(spi_device_handle_t *spiHandle)
-{
-    memset(tempBuf, 0, sizeof(tempBuf)); //reset array
-    memset(status, 0, sizeof(status)); //reset array
-    do {
-        // Wait for reading to complete
-        readSpi(BME_STATUS, status, spiHandle, 8);
-    } while (status[0] & 0x08);
-    readSpi(TEMP_MSB, tempBuf, spiHandle, 24);
-    int32_t temp32 = 0;
-    temp32 |= ((int32_t)tempBuf[0] << 12);
-    temp32 |= ((int32_t)tempBuf[1] << 4);
-    temp32 |= ((int32_t)tempBuf[2] >> 4);
-    return bme280_compensate_T(temp32);
-}
-
-uint32_t readPressure(spi_device_handle_t *spiHandle)
-{
-    memset(tempBuf, 0, sizeof(tempBuf)); //reset array
-    memset(status, 0, sizeof(status)); //reset array
-    readSpi(PRESS_MSB, tempBuf, spiHandle, 24);
-    int pressure32 = 0;
-    pressure32 |= ((int32_t)tempBuf[0] << 12);
-    pressure32 |= ((int32_t)tempBuf[1] << 4);
-    pressure32 |= ((int32_t)tempBuf[2] >> 4);
-    return bme280_compensate_P(pressure32);
-}
-
-uint32_t readHumidity(spi_device_handle_t *spiHandle)
-{
-    memset(tempBuf, 0, sizeof(tempBuf)); //reset array
-    readSpi(HUM_MSB, tempBuf, spiHandle, 16);
-    int humidity32 = 0;
-    humidity32 |= ((int32_t)tempBuf[0] << 8);
-    humidity32 |= ((int32_t)tempBuf[1]);
-    return bme280_compensate_H((int32_t)humidity32);
-}
-
 int bme280_compensate_T(uint32_t uncomp_T)
 {
     int var1, var2, T;
