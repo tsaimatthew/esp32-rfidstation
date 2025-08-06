@@ -48,7 +48,7 @@ void loadNvsIntoRAM()
     /* Open NVS */
     nvs_handle_t nvsHandle;
     ESP_ERROR_CHECK(nvs_open("storage", NVS_READWRITE, &nvsHandle));
-
+    
     /* Read Values */
     _loadStrValue(nvsHandle, "client_cert", client_cert_pem, sizeof(client_cert_pem), "");
     _loadStrValue(nvsHandle, "client_key", client_key_pem, sizeof(client_key_pem), "");
