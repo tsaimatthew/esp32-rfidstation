@@ -90,7 +90,7 @@ void vTaskReadBME280()
             sprintf(buf, "%f", humidity32);
             send_mqtt(mqtt_client, "/humidity", buf);
         }
-        vTaskDelay(pdMS_TO_TICKS(10000)); //10s delay
+        vTaskDelay(60000 / portTICK_PERIOD_MS); //5m delay
     }
 }
 
@@ -105,6 +105,10 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
+        subscribe_mqtt(client, "/otaEnable", 2);
+        subscribe_mqtt(client, "/bleEnable", 2);
+        subscribe_mqtt(client, "/bme280SampleRateM", 2);
+
         mqttConnected = true;
         break;
     case MQTT_EVENT_DISCONNECTED:
@@ -168,6 +172,15 @@ void send_mqtt(esp_mqtt_client_handle_t client, char *topic, char *message)
     strcat(mac, topic);
     ESP_LOGI(TAG, "Topic: %s", mac);
     esp_mqtt_client_publish(client, mac, message, 0, 0, 0);
+}
+
+void subscribe_mqtt(esp_mqtt_client_handle_t client, char *subtopic, int qos)
+{
+    char topic[50] = {0};
+    strcpy(topic, macAddr);
+    strcat(topic, subtopic);
+    esp_mqtt_client_subscribe(client, topic, qos);
+    ESP_LOGI(TAG, "Subscribed to %s", topic);
 }
 
 void run_mqtt()

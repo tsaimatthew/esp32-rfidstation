@@ -249,10 +249,10 @@ void vTaskSendNotification()
         time_t now;
         char strftime_buf[64];
         struct tm timeinfo;
-        time(&now);
-        localtime_r(&now, &timeinfo);
-        strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-        ESP_LOGI("SNTP", "The current date/time in Los Angeles is: %s", strftime_buf);
+        // time(&now);
+        // localtime_r(&now, &timeinfo);
+        // strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+        // ESP_LOGI("SNTP", "The current date/time in Los Angeles is: %s", strftime_buf);
         vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
     // Should never exit

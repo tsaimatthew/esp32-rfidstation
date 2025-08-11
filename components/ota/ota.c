@@ -76,14 +76,10 @@ void event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, voi
     //retry connections if connection fails
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
-        if (retry_num < CONFIG_ESP_MAXIMUM_RETRY) {
-            esp_wifi_connect();
-            retry_num++;
-            ESP_LOGI(TAG, "retrying connection to AP");
-        } else {
-            ESP_LOGE(TAG, "failed to connect to AP");
-            xEventGroupClearBits(wifiEventGroup, WIFI_CONNECTED_BIT);
-        }
+        esp_wifi_connect();
+        retry_num++;
+        ESP_LOGI(TAG, "retrying connection to AP, attempt #%d", retry_num);
+
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {

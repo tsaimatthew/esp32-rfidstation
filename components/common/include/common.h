@@ -35,10 +35,6 @@ extern char mqttEndpt[MAX_MQTT_ENDPT_LENGTH + 1];
 extern char tz[29];
 extern char macAddr[18];
 
-// extern char *client_key_pem;
-// extern char *client_cert_pem;
-// extern char *server_cert_pem;
-
 extern char client_key_pem[MAX_CERT_SIZE];
 extern char client_cert_pem[MAX_CERT_SIZE];
 extern char server_cert_pem[MAX_CERT_SIZE];
